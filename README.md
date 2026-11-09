@@ -130,6 +130,26 @@ Both sources use the same CSV columns: `filename, asset_id, title, artist, museu
 
 For Chicago rows, `asset_id` is the AIC artwork id and `asset_path` links to the artwork page on artic.edu. See `plan.md` for the colour value map.
 
+### Tiles per colour
+
+| Colour | Value | Chicago | Google Arts |
+|---|---|---:|---:|
+| White | 0 | 8 | 300 |
+| Gray | 1 | 380 | 300 |
+| Pink | 2 | 6 | 169 |
+| Purple | 3 | 0 | 222 |
+| Blue | 4 | 88 | 300 |
+| Teal | 5 | 22 | 300 |
+| Green | 6 | 15 | 300 |
+| Yellow | 7 | 90 | 300 |
+| Orange | 8 | 883 | 300 |
+| Red | 9 | 181 | 300 |
+| Brown | 10 | 155 | 0 |
+| Black | 11 | 9 | 0 |
+| **Total** | | **1,837** | **2,791** |
+
+Chicago paintings are grouped by the dominant colour the museum records, and old varnish pushes most of them toward orange and gray. Google Arts was capped at 300 per colour, and Brown and Black were never collected because Google rate-limited the scraper.
+
 ## Testing
 
 ```bash
