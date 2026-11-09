@@ -14,6 +14,13 @@ with sync_playwright() as p:
     pg.goto("file:///" + here.replace("\\", "/") + "/mosaic/index.html")
     pg.set_input_files("#file", test)
     pg.wait_for_function("document.getElementById('msg').textContent.includes('tiles')", timeout=60000)
+    assert pg.input_value("#src") == "chicago", "Chicago is the default source"
+    n_chi = pg.evaluate("TILES.length")
+    pg.select_option("#src", "google")
+    pg.wait_for_function(f"TILES.length !== {n_chi} && document.getElementById('msg').textContent.includes('of ' + TILES.length)", timeout=60000)
+    print("tiles: chicago", n_chi, "| google", pg.evaluate("TILES.length"))
+    pg.select_option("#src", "chicago")
+    pg.wait_for_function(f"document.getElementById('msg').textContent.includes('of {n_chi}')", timeout=60000)
     disp = lambda: pg.evaluate("getComputedStyle(document.getElementById('lens')).display")
     tr = lambda: pg.evaluate("document.getElementById('out').style.transform")
     assert disp() == "none"

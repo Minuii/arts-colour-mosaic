@@ -88,3 +88,11 @@ Found one issue: **438 rows had a blank artist** (the API gives none for many in
 ## 12. Viewer interactions (added after first version)
 - Scroll wheel zooms toward the cursor, drag pans, double-click resets (tested headless: scale 0.24 -> 0.60, reset restores fit).
 - Hover magnifier: a 220px round lens follows the cursor and shows the mosaic at (slider x current zoom). Slider 0 = off, default 6x. Hidden while dragging or when the mouse leaves. Tested headless (lens has real artwork pixels, hides correctly). Screenshot: `mosaic/sample_magnifier.png`.
+
+## 11. Rename and Art Institute of Chicago source
+- Renamed the project to **arts-colour-mosaic**, since it is no longer Google-only.
+- Added `scraper_aic.py`, which uses the open AIC API (no key). It keeps only artworks with `artwork_type_id = 1` (Painting) and `is_public_domain = true`, plus an image and a dominant colour. AIC releases those images under CC0.
+- Each painting goes into one of the 12 colour groups from the API's dominant HSL colour (`colour_group()`), and is saved as a 128×128 centre-cropped tile in `datasets_pd/`, with the same CSV columns as the Google set.
+- Gotchas: the AIC search API refuses anything past its first 1,000 results, so the scraper pages by artwork id instead. The IIIF image server returns 403 to Python's default User-Agent, so the scraper names itself `arts-colour-mosaic`.
+- `build_mosaic.py` now writes one atlas per source (`atlas_chicago.js`, `atlas_google.js`). `index.html` has a "Tiles from" menu, defaulting to Chicago, and loads each atlas only when picked.
+- `validate.py` takes the dataset folder as an argument (default `datasets_pd`).

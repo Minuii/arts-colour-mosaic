@@ -1,8 +1,13 @@
-# Google Arts & Culture Color Dataset & Mosaic Generator
+# Arts Colour Mosaic
 
-**(DISCLAIMER!!!!!! SOME OF THE PAINTINGS ARE NO IN PUBLIC DOMAIN. EDUCATIONAL PURPOSES!!!!!!)**
+A toolkit that collects artworks grouped by colour, organizes them into labelled colour datasets with numeric values, and packages them into a browser-based photomosaic generator that runs entirely offline.
 
-A toolkit that scrapes artworks grouped by color from Google Arts & Culture, organizes them into labeled colour datasets with numeric values, and packages them into a browser-based photomosaic generator that runs entirely offline.
+It has two tile sources:
+
+| Source | Folder | What's in it | Licence |
+|---|---|---|---|
+| **Art Institute of Chicago** (default) | `datasets_pd/` | 1,837 public-domain paintings | CC0, free to reuse |
+| Google Arts & Culture | `datasets/` | 2,791 artworks | Mixed. **Some are still under copyright**, so this set is for educational use only |
 
 ![Sample mosaic output](mosaic/sample_output.png)
 
@@ -12,21 +17,22 @@ A toolkit that scrapes artworks grouped by color from Google Arts & Culture, org
 - [Project Structure](#project-structure)
 - [Quick Start](#quick-start)
 - [Using the Mosaic App](#using-the-mosaic-app)
-- [Building the Pipeline](#building-the-pipeline)
+- [Building the Chicago Dataset](#building-the-chicago-dataset)
+- [Building the Google Arts Dataset](#building-the-google-arts-dataset)
 - [Datasets](#datasets)
 - [Testing](#testing)
-- [Documentation](#documentation)
 
 ## Features
 
-**Color datasets**
-- 10 color categories: White, Gray, Pink, Purple, Blue, Teal, Green, Yellow, Orange, and Red
-- Each category carries a custom numeric value for use in machine learning training
-- A merged `all_colors.csv` covers every category in one file
+**Colour datasets**
+- 12 colour groups: White, Gray, Pink, Purple, Blue, Teal, Green, Yellow, Orange, Red, Brown and Black
+- Each group carries a numeric value for use in machine learning training
+- A merged `all_colors.csv` per source covers every group in one file
 
 **Photomosaic app**
 - Runs as a single HTML file in any modern browser, with no server or installation
-- Upload your own image and build a mosaic from the bundled tile atlas (2,791 tiles)
+- Choose the tile source: Art Institute of Chicago (default) or Google Arts & Culture
+- Upload your own image and build a mosaic from the bundled tile atlas
 - Control grid density from 20 to 160 tiles across
 - Adjust tile variety so repeated tiles are reduced or allowed
 - Blend the original image into the mosaic for stronger recognition
@@ -37,21 +43,26 @@ A toolkit that scrapes artworks grouped by color from Google Arts & Culture, org
 ## Project Structure
 
 ```text
-google-arts-color-mosaic/
-├── datasets/              # Color datasets: images and CSV metadata
-│   ├── WHITE/ … RED/      # One folder per color (10 total)
-│   └── all_colors.csv     # Merged metadata across all colors
+arts-colour-mosaic/
+├── datasets_pd/           # Art Institute of Chicago, public-domain paintings (CC0)
+│   ├── WHITE/ … BLACK/    # One folder per colour: images/ + metadata.csv
+│   └── all_colors.csv
+├── datasets/              # Google Arts & Culture (mixed rights)
+│   ├── WHITE/ … RED/
+│   └── all_colors.csv
 ├── mosaic/
 │   ├── index.html         # Standalone mosaic creator
-│   ├── atlas.js           # Base64-encoded sprite atlas (2,791 tiles)
-│   ├── sample_output.png  # Example rendered mosaic
-│   └── sample_magnifier.png  # Example hover magnifier view
-├── scraper.py             # Scrapes Google Arts & Culture by color
-├── build_mosaic.py        # Compiles dataset images into mosaic/atlas.js
-├── validate.py            # Validates and normalizes the datasets
-├── summarize.py           # Trims datasets offline and reports counts
+│   ├── atlas_chicago.js   # Tile atlas built from datasets_pd/
+│   ├── atlas_google.js    # Tile atlas built from datasets/
+│   ├── sample_output.png
+│   └── sample_magnifier.png
+├── scraper_aic.py         # Downloads AIC public-domain paintings by colour
+├── scraper.py             # Scrapes Google Arts & Culture by colour
+├── build_mosaic.py        # Packs a dataset into mosaic/atlas_<source>.js
+├── validate.py            # Validates and normalizes a dataset
+├── summarize.py           # Trims the Google dataset and reports counts
 ├── test_mosaic.py         # Automated tests for the mosaic viewer
-├── plan.md                # Technical specification and color value map
+├── plan.md                # Technical specification and colour value map
 └── progress.md            # Implementation log
 ```
 
@@ -65,30 +76,59 @@ No web server or build step is required for the mosaic app.
 
 ## Using the Mosaic App
 
-1. **Upload** a source image using the upload control.
-2. **Set the grid** to choose how many tiles span the width. More tiles give more detail but take longer to render.
-3. **Set variety** to limit how often the same tile repeats.
-4. **Adjust blending** to mix the original image into the tiles. This keeps the subject recognizable.
-5. **Explore** the result with the mouse wheel to zoom, drag to pan, and hover to open the magnifier.
-6. **Download** the full-resolution PNG when you're satisfied.
+1. **Pick the tile source** in the "Tiles from" menu. Art Institute of Chicago is selected by default. Switch to Google Arts & Culture if you want that set instead.
+2. **Upload** a source image using the upload control.
+3. **Set the grid** to choose how many tiles span the width. More tiles give more detail but take longer to render.
+4. **Set variety** to limit how often the same tile repeats.
+5. **Adjust blending** to mix the original image into the tiles. This keeps the subject recognizable.
+6. **Explore** the result with the mouse wheel to zoom, drag to pan, and hover to open the magnifier.
+7. **Download** the full-resolution PNG when you're satisfied.
 
-## Building the Pipeline
+If you publish mosaics (a portfolio site, social media), use the Chicago source. Every tile in it is public domain.
 
-The scripts run in this order:
+## Building the Chicago Dataset
+
+The [Art Institute of Chicago API](https://api.artic.edu/docs/) is open and needs no key. `scraper_aic.py` asks it for artworks that are:
+
+- **paintings** (`artwork_type_id = 1`), so no prints, photos, textiles or sculpture
+- marked **public domain** by the museum (`is_public_domain = true`), whose images AIC releases under CC0
+- with an image and a dominant colour on record
+
+Each painting is put in one of the 12 colour groups from the dominant colour the API reports, then saved as a 128×128 centre-cropped tile.
 
 ```bash
-python scraper.py          # 1. Collect images and metadata by color
-python validate.py         # 2. Check and normalize the datasets
-python summarize.py        # 3. Optionally trim datasets and print counts
-python build_mosaic.py     # 4. Rebuild mosaic/atlas.js from the datasets
-python test_mosaic.py      # 5. Run the mosaic test suite
+pip install pillow
+python scraper_aic.py              # 1. Download every public-domain painting (~1,900, a few minutes)
+python validate.py datasets_pd     # 2. Check the CSVs and images
+python build_mosaic.py             # 3. Rebuild mosaic/atlas_chicago.js
+python test_mosaic.py              # 4. Optional: test the viewer
 ```
 
-Rebuild `atlas.js` whenever the datasets change. The mosaic app reads only that file, so it will not reflect dataset edits until you run `build_mosaic.py` again.
+Useful options:
+
+```bash
+python scraper_aic.py --limit 200  # Quick test with 200 paintings
+python scraper_aic.py --size 256   # Bigger tiles
+```
+
+Re-running is safe: images already on disk are skipped. To change how colours are grouped, edit `colour_group()` in `scraper_aic.py`, delete `datasets_pd/` and run it again.
+
+## Building the Google Arts Dataset
+
+```bash
+python scraper.py                      # 1. Collect images and metadata by colour
+python validate.py datasets            # 2. Check and normalize
+python summarize.py                    # 3. Optionally trim and print counts
+python build_mosaic.py --source datasets   # 4. Rebuild mosaic/atlas_google.js
+```
+
+Scraping Google Arts & Culture is subject to that site's terms of service, and it rate-limits heavy use. Many of its images are not public domain, so don't redistribute this set or mosaics built from it.
 
 ## Datasets
 
-Each color folder contains its images, and `all_colors.csv` lists every artwork with its color label and numeric value. See `plan.md` for the full color value map and the rules used to assign values.
+Both sources use the same CSV columns: `filename, asset_id, title, artist, museum, asset_path, thumbnail_url, dominant_hex, dom_r, dom_g, dom_b, aspect_ratio, color_label, color_hex, color_r, color_g, color_b, color_value`.
+
+For Chicago rows, `asset_id` is the AIC artwork id and `asset_path` links to the artwork page on artic.edu. See `plan.md` for the colour value map.
 
 ## Testing
 
@@ -96,13 +136,4 @@ Each color folder contains its images, and `all_colors.csv` lists every artwork 
 python test_mosaic.py
 ```
 
-The suite checks the mosaic viewer's behavior. Run it after changing `index.html` or `atlas.js`.
-
-## Documentation
-
-- `plan.md` covers the technical specification and color value map.
-- `progress.md` logs each implementation step.
-
-## Notes
-
-Scraping Google Arts & Culture is subject to that site's terms of service. Check them before running `scraper.py` at scale, and respect any rate limits. Verify the artwork images' licenses before redistributing the datasets or any mosaics built from them.
+The suite checks the mosaic viewer's behaviour. Run it after changing `index.html` or an atlas file.

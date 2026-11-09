@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Art Mosaic</title>
+<title>Arts Colour Mosaic</title>
 <style>
   body{font:15px system-ui;margin:0;background:#111;color:#eee;display:flex;flex-direction:column;align-items:center;gap:12px;padding:16px}
   .bar{display:flex;flex-wrap:wrap;gap:16px;align-items:center;justify-content:center}
@@ -14,6 +14,10 @@
 <h2 style="margin:0">Upload an image → get an art mosaic</h2>
 <div class="bar">
   <input type="file" id="file" accept="image/*">
+  <label>Tiles from <select id="src">
+    <option value="chicago" selected>Art Institute of Chicago (public domain)</option>
+    <option value="google">Google Arts &amp; Culture (some copyrighted)</option>
+  </select></label>
   <label>Tiles across <input type="range" id="cols" min="20" max="160" value="80"><b id="colsV">80</b></label>
   <label>Variety <input type="range" id="var" min="0" max="100" value="30"></label>
   <label>Original blend <input type="range" id="blend" min="0" max="60" value="15"></label>
@@ -23,14 +27,27 @@
 <div id="msg">Hover to magnify, scroll to zoom, drag to pan, double-click to reset.</div>
 <div id="view"><canvas id="out" width="1" height="1"></canvas></div>
 <canvas id="lens" width="220" height="220"></canvas>
-<script src="atlas.js"></script>
 <script>
 const $ = id => document.getElementById(id), out = $('out'), ctx = out.getContext('2d');
-let src = null, atlas = new Image();
-atlas.src = ATLAS;
+let src = null, atlas = new Image(), T = 0, COLS = 0, TILES = [];
+
+// Each tile set lives in its own atlas_<name>.js (built by build_mosaic.py) and is loaded on demand.
+// A <script> tag (not fetch) keeps this working when the page is opened straight from disk.
+function loadSource(name) {
+  const use = () => {
+    ({ T, COLS, TILES } = ATLASES[name]);
+    atlas = new Image(); atlas.onload = render; atlas.src = ATLASES[name].ATLAS;
+  };
+  if (window.ATLASES && ATLASES[name]) return use();
+  $('msg').textContent = 'Loading artwork…';
+  const s = document.createElement('script');
+  s.src = `atlas_${name}.js`; s.onload = use;
+  s.onerror = () => $('msg').textContent = `Missing atlas_${name}.js. Run build_mosaic.py first.`;
+  document.head.append(s);
+}
 
 function render() {
-  if (!src || !atlas.complete) return;
+  if (!src || !atlas.complete || !TILES.length) return;
   const cols = +$('cols').value, rows = Math.max(1, Math.round(cols * src.height / src.width));
   // average colour per cell = downscale to cols x rows
   const s = document.createElement('canvas'); s.width = cols; s.height = rows;
@@ -98,6 +115,7 @@ $('file').onchange = e => {
 };
 $('cols').oninput = () => { $('colsV').textContent = $('cols').value; later(); };
 $('var').oninput = $('blend').oninput = later;
-atlas.onload = render;
+$('src').onchange = () => loadSource($('src').value);
+loadSource($('src').value);
 $('dl').onclick = () => { const a = document.createElement('a'); a.download = 'mosaic.png'; a.href = out.toDataURL('image/png'); a.click(); };
 </script>

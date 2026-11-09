@@ -20,6 +20,12 @@ COLOR_VALUES = {
     "WHITE": 0, "GRAY": 1, "PINK": 2, "PURPLE": 3, "BLUE": 4, "TEAL": 5,
     "GREEN": 6, "YELLOW": 7, "ORANGE": 8, "RED": 9, "BROWN": 10, "BLACK": 11,
 }
+# Reference hex per colour group (the swatches Google Arts & Culture uses).
+COLOR_HEX = {
+    "WHITE": "#FFFFFF", "GRAY": "#BDBDBD", "PINK": "#F48FB1", "PURPLE": "#9C27B0",
+    "BLUE": "#2A56C6", "TEAL": "#2979FF", "GREEN": "#0D904F", "YELLOW": "#FDD835",
+    "ORANGE": "#FF9800", "RED": "#D50000", "BROWN": "#795548", "BLACK": "#37474F",
+}
 
 FIELDS = ["filename", "asset_id", "title", "artist", "museum", "asset_path",
           "thumbnail_url", "dominant_hex", "dom_r", "dom_g", "dom_b",
