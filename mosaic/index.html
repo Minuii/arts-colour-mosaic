@@ -10,6 +10,13 @@
   canvas{transform-origin:0 0;display:block}
   #lens{position:fixed;width:220px;height:220px;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 20px #000;pointer-events:none;display:none;background:#222;z-index:9}
   button{padding:6px 14px}
+  .main{display:flex;gap:12px;width:100%}
+  .main #view{flex:1;min-width:0}
+  #counts{width:170px;background:#222;padding:12px;margin:0;list-style:none;font-size:14px;align-self:flex-start}
+  #counts li{display:flex;align-items:center;gap:8px;padding:2px 0}
+  #counts i{width:12px;height:12px;border:1px solid #555}
+  #counts b{margin-left:auto;font-variant-numeric:tabular-nums}
+  #counts li:last-child{border-top:1px solid #444;margin-top:6px;padding-top:6px}
 </style>
 <h2 style="margin:0">Upload an image → get an art mosaic</h2>
 <div class="bar">
@@ -25,7 +32,10 @@
   <button id="dl" disabled>Download PNG</button>
 </div>
 <div id="msg">Hover to magnify, scroll to zoom, drag to pan, double-click to reset.</div>
-<div id="view"><canvas id="out" width="1" height="1"></canvas></div>
+<div class="main">
+  <div id="view"><canvas id="out" width="1" height="1"></canvas></div>
+  <ul id="counts"></ul>
+</div>
 <canvas id="lens" width="220" height="220"></canvas>
 <script>
 const $ = id => document.getElementById(id), out = $('out'), ctx = out.getContext('2d');
@@ -36,6 +46,8 @@ let src = null, atlas = new Image(), T = 0, COLS = 0, TILES = [];
 function loadSource(name) {
   const use = () => {
     ({ T, COLS, TILES } = ATLASES[name]);
+    showCounts();
+    if (!src) $('msg').textContent = 'Hover to magnify, scroll to zoom, drag to pan, double-click to reset.';
     atlas = new Image(); atlas.onload = render; atlas.src = ATLASES[name].ATLAS;
   };
   if (window.ATLASES && ATLASES[name]) return use();
@@ -44,6 +56,16 @@ function loadSource(name) {
   s.src = `atlas_${name}.js`; s.onload = use;
   s.onerror = () => $('msg').textContent = `Missing atlas_${name}.js. Run build_mosaic.py first.`;
   document.head.append(s);
+}
+
+// side panel: how many tiles are in each colour group
+const COLOURS = { WHITE: '#FFFFFF', GRAY: '#BDBDBD', PINK: '#F48FB1', PURPLE: '#9C27B0', BLUE: '#2A56C6', TEAL: '#2979FF',
+  GREEN: '#0D904F', YELLOW: '#FDD835', ORANGE: '#FF9800', RED: '#D50000', BROWN: '#795548', BLACK: '#37474F' };
+function showCounts() {
+  const n = {}; for (const t of TILES) n[t[3]] = (n[t[3]] || 0) + 1;
+  $('counts').innerHTML = Object.entries(COLOURS).map(([c, hex]) =>
+    `<li><i style="background:${hex}"></i>${c[0] + c.slice(1).toLowerCase()}<b>${n[c] || 0}</b></li>`).join('')
+    + `<li>Total<b>${TILES.length}</b></li>`;
 }
 
 function render() {
